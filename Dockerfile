@@ -1,10 +1,6 @@
 # Dockerfile
-FROM python:3.12-slim
+FROM nginx:latest
 
-WORKDIR /app
+COPY index.html /usr/share/nginx/html/index.html
 
-COPY app.py .
-
-RUN pip install flask
-
-CMD ["python", "app.py"]
+EXPOSE 80
