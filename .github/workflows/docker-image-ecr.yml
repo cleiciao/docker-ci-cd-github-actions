@@ -36,6 +36,6 @@ jobs:
           docker tag mysite:${{ steps.set_tag.outputs.sha_tag }} ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/mysite:${{ steps.set_tag.outputs.sha_tag }}
 
 
-      - name: Push to AWS ECR Docker
+      - name: Push to AWS ECR Docker Site All Site
         run: docker push ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/mysite:${{ steps.set_tag.outputs.sha_tag }}
 
