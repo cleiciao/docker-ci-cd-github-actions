@@ -39,7 +39,7 @@
         - name: Push to AWS ECR Docker Site All Site
           run: docker push ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/mysite:${{ steps.set_tag.outputs.sha_tag }}
 
-     deploy:
+    deploy:
     runs-on: ubuntu-latest
     needs: build-and-push
 
