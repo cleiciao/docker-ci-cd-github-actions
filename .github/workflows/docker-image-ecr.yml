@@ -58,7 +58,7 @@ jobs:
     needs: build-and-push
 
     steps:
-      - name: Deploy to EC2 Site Allsafe
+      - name: Deploy to EC2 Site Allsafe 2
         uses: appleboy/ssh-action@v1.2.2
         with:
           host: ${{ secrets.EC2_HOST }}
