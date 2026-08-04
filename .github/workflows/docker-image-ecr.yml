@@ -1,40 +1,75 @@
-name: Build Docker CI/CD
+  name: Build Docker CI/CD
 
-on:
-  push:
-    branches:
-      - main
+  on:
+    push:
+      branches:
+        - main
 
-jobs:
-  build-and-push:
+  jobs:
+    build-and-push:
+      runs-on: ubuntu-latest
+      outputs:
+        sha_tag: ${{ steps.set_tag.outputs.sha_tag }}
+
+      steps:
+        - name: Checkout Code
+          uses: actions/checkout@v4
+
+        - name: Set SHA Tag
+          id: set_tag
+          run: echo "sha_tag=${GITHUB_SHA::7}" >> $GITHUB_OUTPUT
+
+        - name: Configure AWS Credentials
+          uses: aws-actions/configure-aws-credentials@v2
+          with:
+            aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+            aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+            aws-region: ${{ secrets.AWS_REGION }}
+
+        - name: Log in to Amazon ECR
+          uses: aws-actions/amazon-ecr-login@v1
+
+
+        - name: Build Docker Image
+          run: |
+            docker build -t mysite:${{ steps.set_tag.outputs.sha_tag }} .
+            docker tag mysite:${{ steps.set_tag.outputs.sha_tag }} ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/mysite:${{ steps.set_tag.outputs.sha_tag }}
+
+
+        - name: Push to AWS ECR Docker Site All Site
+          run: docker push ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/mysite:${{ steps.set_tag.outputs.sha_tag }}
+
+     deploy:
     runs-on: ubuntu-latest
-    outputs:
-      sha_tag: ${{ steps.set_tag.outputs.sha_tag }}
+    needs: build-and-push
 
     steps:
-      - name: Checkout Code
-        uses: actions/checkout@v4
 
-      - name: Set SHA Tag
-        id: set_tag
-        run: echo "sha_tag=${GITHUB_SHA::7}" >> $GITHUB_OUTPUT
-
-      - name: Configure AWS Credentials
-        uses: aws-actions/configure-aws-credentials@v2
+      - name: Deploy EC2
+        uses: appleboy/ssh-action@v1.2.2
         with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ${{ secrets.AWS_REGION }}
+          host: ${{ secrets.EC2_HOST }}
+          username: ubuntu
+          key: ${{ secrets.EC2_SSH_KEY }}
 
-      - name: Log in to Amazon ECR
-        uses: aws-actions/amazon-ecr-login@v1
+          script: |
 
+            aws ecr get-login-password --region ${{ secrets.AWS_REGION }} \
+            | docker login \
+              --username AWS \
+              --password-stdin \
+              ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com
 
-      - name: Build Docker Image
-        run: |
-          docker build -t mysite:${{ steps.set_tag.outputs.sha_tag }} .
-          docker tag mysite:${{ steps.set_tag.outputs.sha_tag }} ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/mysite:${{ steps.set_tag.outputs.sha_tag }}
+            docker pull \
+              ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/mysite:${{ needs.build-and-push.outputs.sha_tag }}
 
+            docker stop mysite || true
+            docker rm mysite || true
 
-      - name: Push to AWS ECR Docker Site All Site
-        run: docker push ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/mysite:${{ steps.set_tag.outputs.sha_tag }}
+            docker run -d \
+              --name mysite \
+              --restart unless-stopped \
+              -p 80:80 \
+              ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/mysite:${{ needs.build-and-push.outputs.sha_tag }}
+
+            docker image prune -af
