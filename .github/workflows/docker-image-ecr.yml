@@ -5,8 +5,8 @@ on:
     branches:
       - main
   workflow_dispatch:
-  paths:
-    - '/*.html'
+    paths:
+      - '/*.html'
 
 
 env:
