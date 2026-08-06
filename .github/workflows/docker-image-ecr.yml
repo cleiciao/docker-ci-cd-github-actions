@@ -4,7 +4,10 @@ on:
   push:
     branches:
       - main
-  workflow_dispatch:
+    paths:
+      - '.html'
+  #workflow_dispatch:
+   
   
 
 
