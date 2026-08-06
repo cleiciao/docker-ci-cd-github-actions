@@ -38,7 +38,7 @@ jobs:
       - name: Login to Amazon ECR
         uses: aws-actions/amazon-ecr-login@v2
 
-      - name: Build Docker image
+      - name: Build Docker image private
         run: |
           docker build -t ${ECR_REPOSITORY}:${{ steps.set_tag.outputs.sha_tag }} .
 
@@ -61,7 +61,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Deploy to EC2 allsafe 2
+      - name: Deploy to EC2 allsafe
         uses: appleboy/ssh-action@v1.2.2
         with:
           host: ${{ secrets.EC2_HOST }}
