@@ -42,7 +42,7 @@ jobs:
         run: |
           docker build -t ${ECR_REPOSITORY}:${{ steps.set_tag.outputs.sha_tag }} .
 
-      - name: Tag Docker image
+      - name: Tag Docker image private
         run: |
           docker tag ${ECR_REPOSITORY}:${{ steps.set_tag.outputs.sha_tag }} \
             ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/${ECR_REPOSITORY}:${{ steps.set_tag.outputs.sha_tag }}
