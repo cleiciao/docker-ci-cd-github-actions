@@ -6,6 +6,8 @@ on:
       - main
     paths:
       - '*.html'
+      - 'Dockerfile'
+      - 'README.md'
   workflow_dispatch:
    
   
